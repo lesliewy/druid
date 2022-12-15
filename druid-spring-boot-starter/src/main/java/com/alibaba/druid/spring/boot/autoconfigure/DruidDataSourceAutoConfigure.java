@@ -49,6 +49,10 @@ import javax.sql.DataSource;
 public class DruidDataSourceAutoConfigure {
     private static final Logger LOGGER = LoggerFactory.getLogger(DruidDataSourceAutoConfigure.class);
 
+    /**
+     * 创建dataSource, 解析配置文件, 调用init().
+     * @return
+     */
     @Bean(initMethod = "init")
     @ConditionalOnMissingBean
     public DataSource dataSource() {

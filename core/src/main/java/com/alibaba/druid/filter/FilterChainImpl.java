@@ -30,6 +30,10 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 
 /**
+ * 责任链模式.
+ * filterChain: 包含了所有的filters. 通过pos来遍历filters, 调用后续的filter时，需要传递filterChain .
+ *    例如: nextFilter().connection_connect(this, info);
+ *
  * @author wenshao [szujobs@hotmail.com]
  */
 public class FilterChainImpl implements FilterChain {

@@ -226,6 +226,16 @@ public abstract class DruidAbstractDataSource extends WrapperAdapter implements 
     protected boolean isMySql;
     protected boolean useOracleImplicitCache = true;
 
+    /**
+     * 生产者消费者模式.
+     * 第一种：
+     * 生产者： not empty -> empty.await()   判断非空的时候，等待empty. 只在空的时候，才生产.
+     * 消费者: notEmpty.await() 判断空的时候，等待notEmpty
+     *
+     * 第二种:
+     * 生产者: full -> notFull.await()  判断满的时候，等待notFull. 只要不满就生产.
+     * 消费者: notEmpty.wait()  判断空的时候，等待notEmpty
+     */
     protected ReentrantLock lock;
     protected Condition notEmpty;
     protected Condition empty;
@@ -258,6 +268,7 @@ public abstract class DruidAbstractDataSource extends WrapperAdapter implements 
     protected volatile int failContinuous;
     protected volatile long failContinuousTimeMillis;
     protected ScheduledExecutorService destroyScheduler;
+    /** 创建连接的线程池 */
     protected ScheduledExecutorService createScheduler;
     protected Executor netTimeoutExecutor;
     protected volatile boolean netTimeoutError;

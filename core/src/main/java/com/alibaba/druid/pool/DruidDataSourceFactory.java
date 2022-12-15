@@ -29,6 +29,10 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
 
+/**
+ * DruidDataSource工厂.
+ * 另一种创建DruidDataSource是 druid-spring-boot-starter.
+ */
 public class DruidDataSourceFactory implements ObjectFactory {
     private static final Log LOG = LogFactory.getLog(DruidDataSourceFactory.class);
 
@@ -157,6 +161,12 @@ public class DruidDataSourceFactory implements ObjectFactory {
         return dataSource;
     }
 
+    /**
+     * 创建dataSource.
+     * @param properties
+     * @return
+     * @throws Exception
+     */
     @SuppressWarnings("rawtypes")
     public static DataSource createDataSource(Properties properties) throws Exception {
         return createDataSource((Map) properties);
@@ -169,6 +179,12 @@ public class DruidDataSourceFactory implements ObjectFactory {
         return dataSource;
     }
 
+    /**
+     * 解析配置文件，初始化dataSource.
+     * @param dataSource
+     * @param properties
+     * @throws SQLException
+     */
     @SuppressWarnings({"deprecation", "rawtypes"})
     public static void config(DruidDataSource dataSource, Map<?, ?> properties) throws SQLException {
         String value = null;
