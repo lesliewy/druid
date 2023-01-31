@@ -38,6 +38,16 @@ import javax.sql.DataSource;
 /**
  * @author lihengming [89921218@qq.com]
  */
+
+/**
+ * springboot 会加载该类.  同时也会加载 @Import 的类.
+ *
+ * DruidDataSourceWrapper extends DruidDataSource, 也就说会执行new DruidDataSource
+ *
+ * DruidFilterConfiguration中的filters会通过DruidDataSourceWrapper#autoAddFilters() 配置到druidDataSource中.
+ *
+ *
+ */
 @Configuration
 @ConditionalOnClass(DruidDataSource.class)
 @AutoConfigureBefore(DataSourceAutoConfiguration.class)

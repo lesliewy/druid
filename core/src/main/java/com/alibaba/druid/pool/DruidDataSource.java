@@ -74,7 +74,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import static com.alibaba.druid.util.Utils.getBoolean;
 
 /**
- * getConnection()为切入口.
+ *  * DruidTest 及同目录下其他Tests.
+ *
+ *  * getConnection()为切入口.
  *
  * DruidDataSource: Druid提供的数据类，实现了DataSource接口，实现了获取连接的getConnection方法，用于应用程序使用的数据对象，
  * 内部持有连接的数组DruidConnectionHolder[] connections表示连接池
@@ -154,6 +156,7 @@ public class DruidDataSource extends DruidAbstractDataSource implements DruidDat
     public static ThreadLocal<Long> waitNanosLocal = new ThreadLocal<Long>();
     private boolean logDifferentThread = true;
     private volatile boolean keepAlive;
+    /** init()时是否异步创建连接. */
     private boolean asyncInit;
     protected boolean killWhenSocketReadTimeout;
     protected boolean checkExecuteTime;
@@ -189,6 +192,10 @@ public class DruidDataSource extends DruidAbstractDataSource implements DruidDat
         this.asyncInit = asyncInit;
     }
 
+    /**
+     * 提供了从properties加载配置的方法. 当然也可以直接 druidDatasource.setxxx()
+     *
+     */
     public void configFromPropety(Properties properties) {
         {
             String property = properties.getProperty("druid.name");
@@ -1759,7 +1766,7 @@ public class DruidDataSource extends DruidAbstractDataSource implements DruidDat
                     }
                 }
 
-                /** 如果设置超时时间,则堵塞指定时长获取连接; 如果没有设置超时时间,则堵塞获取连接.*/
+                /** 从连接池获取连接的地方. 如果设置超时时间,则堵塞指定时长获取连接; 如果没有设置超时时间,则堵塞获取连接.*/
                 if (maxWait > 0) {
                     holder = pollLast(nanos);
                 } else {
@@ -2332,6 +2339,7 @@ public class DruidDataSource extends DruidAbstractDataSource implements DruidDat
 
         for (; ; ) {
             if (poolingCount == 0) {
+                /** 生产者在 DruidDataSource.CreateConnectionThread */
                 emptySignal(); // send signal to CreateThread create connection
 
                 if (failFast && isFailContinuous()) {
@@ -2384,6 +2392,7 @@ public class DruidDataSource extends DruidAbstractDataSource implements DruidDat
                 }
             }
 
+            /** 取尾部的连接，poolingCount 已经在 CreateConnectionThread.run()的put()方法中自增过。*/
             decrementPoolingCount();
             DruidConnectionHolder last = connections[poolingCount];
             connections[poolingCount] = null;
@@ -2904,7 +2913,7 @@ public class DruidDataSource extends DruidAbstractDataSource implements DruidDat
 
                     if (emptyWait) {
                         /**
-                         * 当连接足够时,睡眠线程
+                         * 当连接足够时,睡眠线程. 在put()时会调用notEmpty.signal()
                          */
                         // 必须存在线程等待，才创建连接
                         if (poolingCount >= notEmptyWaitThreadCount //
@@ -3229,8 +3238,11 @@ public class DruidDataSource extends DruidAbstractDataSource implements DruidDat
 
     /**
      * 当一个连接长时间没有被使用，如果不及时清理就会造成资源浪费，所以需要定时检查空闲时间过长的连接进行断开连接销毁
-     * @param checkTime
-     * @param keepAlive
+     * 需要清理连接的情况:
+     *    1, 超过 minEvictableIdleTimeMillis
+     *    2, 超过 keepAliveBetweenTimeMillis
+     *    3, 如果checkTime=false, 那么就按顺序清理，保留 minIdle 个连接即可.
+     *
      */
     public void shrink(boolean checkTime, boolean keepAlive) {
         try {
@@ -3304,7 +3316,7 @@ public class DruidDataSource extends DruidAbstractDataSource implements DruidDat
             }
 
             int removeCount = evictCount + keepAliveCount;
-            /** 从数组中将多余的连接移除 */
+            /** 从数组中将多余的连接移除. 其中evictCount是需要直接移除的， keepAliveCount是需要校验连接，没问题的话会被放回. */
             if (removeCount > 0) {
                 System.arraycopy(connections, removeCount, connections, 0, poolingCount - removeCount);
                 Arrays.fill(connections, poolingCount - removeCount, poolingCount, null);
@@ -3319,8 +3331,8 @@ public class DruidDataSource extends DruidAbstractDataSource implements DruidDat
             lock.unlock();
         }
 
+        /** 对于evict的连接，依次断开. */
         if (evictCount > 0) {
-            /** 依次断开被移除的连接 */
             for (int i = 0; i < evictCount; ++i) {
                 DruidConnectionHolder item = evictConnections[i];
                 Connection connection = item.getConnection();
@@ -3330,6 +3342,7 @@ public class DruidDataSource extends DruidAbstractDataSource implements DruidDat
             Arrays.fill(evictConnections, null);
         }
 
+        /** 对于需要保活的，依次校验. */
         if (keepAliveCount > 0) {
             // keep order
             for (int i = keepAliveCount - 1; i >= 0; --i) {
@@ -3349,6 +3362,7 @@ public class DruidDataSource extends DruidAbstractDataSource implements DruidDat
                 }
 
                 boolean discard = !validate;
+                /** 校验通过的，会被重新put(). */
                 if (validate) {
                     holer.lastKeepTimeMillis = System.currentTimeMillis();
                     boolean putOk = put(holer, 0L, true);
