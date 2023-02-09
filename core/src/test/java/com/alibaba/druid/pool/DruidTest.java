@@ -70,11 +70,13 @@ public class DruidTest {
     }
 
     public static void initDS(String connectURI) {
-        initDS(connectURI, "root", "12345", "com.mysql.jdbc.Driver", 40, 40, 40, 10, 5);
+//        initDS(connectURI, "root", "12345", "com.mysql.jdbc.Driver", 40, 40, 40, 10, 5);
+        initDS(connectURI, "root", "123456", "com.mysql.jdbc.Driver", 40, 40, 40, 10, 5);
     }
 
     public static void main(String[] args) throws IOException, SQLException {
-        DruidTest db = new DruidTest("jdbc:mysql://a.b.c.d:8066/amoeba");
+//        DruidTest db = new DruidTest("jdbc:mysql://a.b.c.d:8066/amoeba");
+        DruidTest db = new DruidTest("jdbc:mysql://localhost:3306/wy");
         Connection conn = null;
         Statement stmt = null;
         ResultSet rs = null;
