@@ -41,6 +41,10 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * @author wenshao [szujobs@hotmail.com]
  */
+
+/**
+ * internalAfterStatementExecute(): slow sql.
+ */
 public class StatFilter extends FilterEventAdapter implements StatFilterMBean {
     private static final Log LOG = LogFactory.getLog(StatFilter.class);
 
@@ -483,6 +487,7 @@ public class StatFilter extends FilterEventAdapter implements StatFilterMBean {
             }
 
             long millis = nanos / (1000 * 1000);
+            /** 记录慢sql. */
             if (millis >= slowSqlMillis) {
                 String slowParameters = buildSlowParameters(statement);
                 sqlStat.setLastSlowParameters(slowParameters);
